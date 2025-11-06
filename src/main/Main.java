@@ -3,6 +3,10 @@ package main;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -12,11 +16,27 @@ import javax.swing.JOptionPane;
 import data.DatabaseConnection;
 
 public class Main {
-	
+
     public static JFrame window;
 
     public static void main(String[] args) {
-        // === create dimension ===
+
+        DatabaseConnection db = new DatabaseConnection();
+        Path dbPath = Paths.get("gamedata.db"); 
+
+        try {
+            if (Files.notExists(dbPath)) {
+                System.out.println("DB not found, creating...");
+                db.setupDatabase();
+            } else {
+                System.out.println("DB already exists, skipping setup.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            try { db.setupDatabase(); } catch (Exception ignored) {}
+        }
+
+        // === TẠO CỬA SỔ GAME ===
         window = new JFrame();
         window.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         window.setResizable(false);
@@ -35,7 +55,7 @@ public class Main {
         window.setLocationRelativeTo(null);
         window.setVisible(true);
 
-        // === event ===
+        // === SỰ KIỆN ĐÓNG / THU NHỎ / PHỤC HỒI ===
         window.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -77,15 +97,17 @@ public class Main {
             }
         });
 
-        // === start GAME ===
+        // === KHỞI ĐỘNG GAME ===
         gamepanel.setupGame();
         gamepanel.startGameThread();
     }
-	
+
     public void setIcon() {
-        try {
-            ImageIcon icon = new ImageIcon(ImageIO.read(getClass().getResourceAsStream("/player/king_down_1.png")));
-            window.setIconImage(icon.getImage());
+        try (InputStream is = getClass().getResourceAsStream("/player/king_down_1.png")) {
+            if (is != null) {
+                ImageIcon icon = new ImageIcon(ImageIO.read(is));
+                window.setIconImage(icon.getImage());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
